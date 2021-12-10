@@ -1,0 +1,104 @@
+/*Investigation of the role of apical tuft and basal dendrites of L2/3 pyramidal neuron in orientation tuning*/
+/* Papoutsi A., September 2017*/
+load_file("nrngui.hoc")
+
+// Print parameters
+print "dend_id1=", dend_id1, " dend_id2=", dend_id2, " tag=", tag_basal, " apw=", apical_width, " bw=", basal_width, " stim=", stimulus_presentation, " run=", n_run, "neuron=", n_neuron
+
+//Ablated neurons (1) or not (0)
+ablated=0		//For the apical tree
+cut_basal=0		//For the basal dendrites
+// Open libraries / cell setup
+xopen("basic-graphics.hoc")
+xopen("morphologies/L23pyramid.hoc")  	
+xopen("./cell_setup.hoc")
+xopen("delete_dendrites.hoc")
+
+//Set simulation parameters
+tstop = 2500
+steps_per_ms=10
+dt=0.1					
+
+//Synaptic weights
+gaba_g=0.00125
+if (ablated) {
+	ampa_g=0.00084*0.55
+	nmda_g=0.00115*0.55
+}else {
+	if (cut_basal) { 
+		if (dend_id2==dend_id1) {
+			ampa_g=0.00084*1.04
+			nmda_g=0.00115*1.04
+		} else {
+			ampa_g=0.00084*1.068
+			nmda_g=0.00115*1.068
+		}
+	} else {
+		ampa_g=0.00084
+		nmda_g=0.00115
+	}
+}
+
+addgraph_2("soma.v(0.5)", 0,tstop, -75, 50)
+
+//-----------------Background synapses
+tl=3298.1508 						//Total length of neuron
+syn_exc_total=round(tl*2)				//Assume synaptic density 2/micrometer
+syn_exc=round(75*syn_exc_total/100)			//25% of spines are visual responsive, Chen et al. 2013. The rest is set as background input.
+syn_basal=round(60*syn_exc/100)				//deFelipe, Farinas,1998
+syn_apical=round(40*syn_exc/100)			//deFelipe, Farinas,1998
+
+syn_inh=round(syn_exc_total*15/85) 			//15% Binzegger,Martin, 2004 (L2/3, cat V1)
+syn_inh_soma=round(syn_inh*7/100)			//deFelipe, Farinas,1998
+syn_inh_apical=round(syn_inh*33/100)
+syn_inh_basal=round(syn_inh*60/100)
+
+Hz=0.11							
+Hz_inh=0.11						//Adjusted so that the overall spontaneous spiking frequency is ~0.2Hz - Crochet, Petersen 2011.
+	
+//------------------Stimulus Properties						
+tag_apical=0						//neuron's preferred orientation (arbitary selected)
+s_Hz=0.3						//Stimulus frequency 
+stimulus_duration=2000					//As in the experimental set-up
+
+total_syn=round(25*syn_exc_total/100)			//25% of spines are visual responsive, Chen et al. 2013
+total_syn_apic=round(total_syn*40/100)
+total_syn_basal=round(total_syn*60/100)
+
+//--Set parameters
+find_prim_dendrites ()	
+num_seed=basal_width*apical_width*(tag_basal+1)*10000*(n_run+1)*(n_neuron+1)
+num_seed2=basal_width*apical_width*(tag_basal+1)*10000*(n_neuron+1)			//Simulate independent neurons, where the position and the orientation preference of the synapses remains constant per neuron.
+
+//Load Background-Stimulus Protocols
+xopen("background_uniform.hoc")
+xopen("stimulus_uniform_basalvar.hoc")
+
+//Make directory to save data
+strdef temp_dir, temp_mkdir
+if (ablated) {
+	sprint(temp_dir, "results/disp_%d/apical_basal_data/id1_%d_id2_%d_tag%d_apw%d_bw%d/stim_%d/neuron%d",disp,dend_id1, dend_id2, tag_basal, apical_width, basal_width, stimulus_presentation,n_neuron)
+} else if (cut_basal) {
+	sprint(temp_dir, "results/disp_%d/cut_basal_data/id1_%d_id2_%d_tag%d_apw%d_bw%d/stim_%d/neuron%d",disp,dend_id1, dend_id2, tag_basal, apical_width, basal_width, stimulus_presentation,n_neuron)
+} else {
+	sprint(temp_dir, "results/disp_%d/basal_data/id1_%d_id2_%d_tag%d_apw%d_bw%d/stim_%d/neuron%d",disp,dend_id1, dend_id2, tag_basal, apical_width, basal_width, stimulus_presentation,n_neuron)
+}
+sprint(temp_mkdir, "mkdir -p %s", temp_dir)
+system(temp_mkdir)
+xopen("record_save_data.hoc")
+
+//--------------------------------------------Run the simulation!	
+background_activity ()
+stimulus()
+if (ablated) {
+	delete_apical()
+}
+if (cut_basal) {
+	delete_primary_dendrites(dend_id1, dend_id2)
+}
+rec_soma()
+if (!cut_basal && !ablated && stimulus_presentation==0) {save_tags()}	
+run()
+save_soma ()
+
+//That's the end!

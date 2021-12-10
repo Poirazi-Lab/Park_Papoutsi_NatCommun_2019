@@ -1,0 +1,113 @@
+//Record and save data
+
+// Object declarations
+//Record
+total=100
+objref PCv, Bv[total], Av[total], CBv[total], CAv[total], CPCv
+//Save
+objref vsoma, vapical[total], vbasal[total], ca_soma, ca_apical[total], ca_basal[total], save_tags_basal[5], save_tags_apical
+strdef temp_save
+
+n=tstop/dt
+proc rec_soma(){
+	PCv=new Vector(n)
+	soma PCv.record(&v(.5)) 
+}
+proc rec_dend () {
+	
+	for i=0, basal.count()-1 {
+		Bv[i]=new Vector(n)
+		basal.o(i).sec Bv[i].record(&v(.5))
+	}
+	
+	if (!ablated) {
+		for i=0, apical.count()-1 {
+			Av[i]=new Vector(n)
+			apical.o(i).sec Av[i].record(&v(.5))
+		}
+	}
+}
+proc rec_calcium(){
+	
+	for i=0, basal.count()-1 {
+		CBv[i]=new Vector(n)
+		basal.o(i).sec CBv[i].record(&cai(.5)) 
+	}
+	
+	if (!ablated) {
+		for i=0, apical.count()-1 {
+			CAv[i]=new Vector(n)
+			apical.o(i).sec CAv[i].record(&cai(.5))
+		}
+	}
+	CPCv=new Vector(n)
+	soma CPCv.record(&cai(.5)) 		
+}
+
+
+proc save_soma () {
+	vsoma = new File()		
+	sprint(temp_save,"%s/soma%d.dat", temp_dir,n_run+1)
+	vsoma.wopen(temp_save)
+	for j=0, PCv.size()-1 { vsoma.printf ("%f\n",PCv.x[j])}
+	vsoma.close()
+}
+proc save_tags() {
+	save_tags_apical = new File()		
+	sprint(temp_save,"%s/tag_apical%d.dat", temp_dir,n_run+1)
+	save_tags_apical.wopen(temp_save)
+	for j=0, tags_apical_syns.size()-1 { save_tags_apical.printf ("%f\n",tags_apical_syns.x[j])}
+	save_tags_apical.close()
+	for pd=0, 4 { 
+		save_tags_basal[pd] = new File()		
+		sprint(temp_save,"%s/tag_basal%d_%d.dat", temp_dir, pd, n_run+1)
+		save_tags_basal[pd].wopen(temp_save)
+		save_tags_basal[pd].printf ("%f\n",tag_dend_vec.x[pd])
+		for j=0, tags_basal_syns[pd].size()-1 {save_tags_basal[pd].printf ("%f\n",tags_basal_syns[pd].x[j])}
+		save_tags_basal[pd].close()
+	}
+}
+proc save_dend () {
+	if (!ablated) {
+		for i=0,num_apical-1 {
+			vapical[i] = new File()		
+			sprint(temp_save,"%s/apical%d_%d.dat", temp_dir,i, n_run+1)
+			vapical[i].wopen(temp_save)
+			for j=0, Av.size()-1 {vapical[i].printf ("%f\n",Av.x[j])}
+			vapical[i].close()
+		}
+	
+	}
+	for i=0,num_basal-1 {
+		vbasal[i] = new File()		
+		sprint(temp_save,"%s/basal%d.dat", temp_dir,i, n_run+1)
+		vbasal[i].wopen(temp_save)
+		for j=0, Bv.size()-1 {vbasal[i].printf ("%f\n",Bv.x[j])}
+		vbasal[i].close()
+	}
+}
+
+proc save_calcium() {
+	ca_soma = new File()		
+	sprint(temp_save,"%s/ca_soma%d.dat", temp_dir, n_run+1)
+	ca_soma.wopen(temp_save)
+	for j=0, CPCv.size()-1 {ca_soma.printf ("%f\n",CPCv.x[j])}
+	ca_soma.close()
+	if (!ablated) {
+		for i=0,apical.count()-1 {
+			ca_apical[i] = new File()		
+			sprint(temp_save,"%s/ca_apical%d_%d.dat", temp_dir,i, n_run+1)
+			ca_apical[i].wopen(temp_save)
+			for j=0, CAv.size()-1 {ca_apical[i].printf ("%f\n",CAv.x[j])}
+			ca_apical[i].close()
+		}
+	}
+	for i=0,basal.count()-1 {
+		ca_basal[i] = new File()		
+		sprint(temp_save,"%s/ca_basal%d.dat", temp_dir,i, n_run+1)
+		ca_basal[i].wopen(temp_save)
+		for j=0, CBv.size()-1 {ca_basal[i].printf ("%f\n",CBv.x[j])}
+		ca_basal[i].close()
+	}
+}
+

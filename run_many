@@ -1,0 +1,27 @@
+for disp in 0; do #1 2 3 4;  
+for apical_width in 30; do #15 30 45 60 
+for basal_width in 30; do #15 30 45 60
+for tag_basal in 0; do # 10 20 30 40 50 60 70 80 90
+for dend_id1 in 0; do # 1 2 3 4 
+for dend_id2 in 0; do # 1 2 3 4
+if [ $dend_id2 -ge $dend_id1 ]  #ge greater or equal 
+then
+for stimulus_presentation in 0; do # 10 20 30 40 50 60 70 80 90 100 110 120 130 140 150 160 170; do 				
+for n_neuron in $(seq 0 0); do
+for n_run in $(seq 0 0); do 
+
+	mod.files/x86_64/special -c disp=${disp} -c dend_id1=${dend_id1} -c dend_id2=${dend_id2} -c basal_width=${basal_width} -c tag_basal=${tag_basal} -c apical_width=${apical_width} -c stimulus_presentation=${stimulus_presentation} -c n_run=${n_run} -c n_neuron=${n_neuron} simulation.hoc -
+done
+done
+done
+fi 
+done
+done
+done
+done
+done
+done
+
+
+
+
